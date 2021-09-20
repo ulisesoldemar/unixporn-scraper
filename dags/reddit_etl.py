@@ -82,7 +82,7 @@ def run_reddit_etl() -> None:
     print('total', len(id_list), 'posts han sido scrapeados')
 
     # Se crea el dataframe
-    df = pd.DataFrame(
+    scraper_df = pd.DataFrame(
         {'id': id_list,
          'title': title_list,
          'upvote_count': score_list,
@@ -91,16 +91,16 @@ def run_reddit_etl() -> None:
          })
 
     # Filtrar post por el tag 'Screeshot'
-    df = df.loc[df['flair'] == 'Screenshot']
+    scraper_df = scraper_df.loc[scraper_df['flair'] == 'Screenshot']
     # Añadir esa nueva columna al dataframe
     def get_de(x): return parse_wm_de(x)
-    df['desktop'] = df['title'].apply(get_de)
+    scraper_df['desktop'] = scraper_df['title'].apply(get_de)
     # Nuevo data frame con las menciones de cada Escritorio/WM
-    count_desktops = Counter(df['desktop']).most_common(20)
-    desktop_mentions = pd.DataFrame(count_desktops)
+    count_desktops = Counter(scraper_df['desktop']).most_common(20)
+    desktop_mentions_df = pd.DataFrame(count_desktops)
 
     # Validar
-    if check_if_valid_data(df):
+    if check_if_valid_data(scraper_df):
         print('Datos válidos. Inicia proceso Load')
     else:
         exit('No son datos válidos')
@@ -108,9 +108,9 @@ def run_reddit_etl() -> None:
     engine = create_engine(DATABASE_LOCATION, echo=False)
     try:
         with engine.begin() as connection:
-            df.to_sql('unixporn', con=connection,
+            scraper_df.to_sql('unixporn', con=connection,
                       if_exists='append', index=False)
-            desktop_mentions.to_sql('desktop_mentions', con=connection,
+            desktop_mentions_df.to_sql('desktop_mentions', con=connection,
                       if_exists='append', index=False)
         print('Bases de datos actualizadas')
     except Exception as e:
