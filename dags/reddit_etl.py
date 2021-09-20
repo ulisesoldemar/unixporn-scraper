@@ -4,7 +4,6 @@ import praw
 import plotly.express as px
 from sqlalchemy import create_engine
 from collections import Counter
-from datetime import datetime
 
 
 def parse_wm_de(title: str) -> str:
@@ -106,7 +105,7 @@ def run_reddit_etl() -> None:
     fig = px.bar(desktop_mentions_df, x='de_wm', y='count', labels={
         'de_wm': 'WM/DE',
         'count': 'Mentions',
-    }, title=f'Unixporn\'s WM/DE Mentions of {datetime.today()}')
+    }, title='Unixporn\'s WM/DE Mentions')
     fig.show()
 
     # Validar
