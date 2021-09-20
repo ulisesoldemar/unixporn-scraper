@@ -2,6 +2,14 @@ import json
 import pandas as pd
 import praw
 from sqlalchemy import create_engine
+from collections import Counter
+
+
+def parse_wm_de(title: str) -> str:
+    '''Retorna el nombre del Escritorio/Gestor de ventanas'''
+    title = title.split()
+    wm_de = title[0][1:len(title[0])-1]
+    return wm_de
 
 
 def check_if_valid_data(df: pd.DataFrame) -> bool:
@@ -20,7 +28,7 @@ def check_if_valid_data(df: pd.DataFrame) -> bool:
     return True
 
 
-def run_reddit_etl():
+def run_reddit_etl() -> None:
     # Autenticación de Reddit:
     # 1. Ingresa a https://www.reddit.com/prefs/apps.
     # 2. Selecciona “script” como el tipo de la app.
@@ -54,39 +62,42 @@ def run_reddit_etl():
     )
 
     # Datos que serán scrapeados
-    author_list = []
     id_list = []
-    link_flair_text_list = []
-    num_comments_list = []
-    score_list = []
     title_list = []
+    score_list = []
     upvote_ratio_list = []
+    link_flair_text_list = []
 
     # Subreddit que será scrapeado
     subreddit = reddit.subreddit('unixporn')
     hot_post = subreddit.hot(limit=10000)
     for sub in hot_post:
-        author_list.append(str(sub.author))
         id_list.append(sub.id)
         link_flair_text_list.append(sub.link_flair_text)
-        num_comments_list.append(sub.num_comments)
         score_list.append(sub.score)
         title_list.append(sub.title)
         upvote_ratio_list.append(sub.upvote_ratio)
 
     print(subreddit, 'completado; ', end='')
-    print('total', len(author_list), 'posts han sido scrapeados')
+    print('total', len(id_list), 'posts han sido scrapeados')
 
     # Se crea el dataframe
     df = pd.DataFrame(
         {'id': id_list,
-         'author': author_list,
          'title': title_list,
-         'count_of_comments': num_comments_list,
          'upvote_count': score_list,
          'upvote_ratio': upvote_ratio_list,
          'flair': link_flair_text_list
          })
+
+    # Filtrar post por el tag 'Screeshot'
+    df = df.loc[df['flair'] == 'Screenshot']
+    # Añadir esa nueva columna al dataframe
+    def get_de(x): return parse_wm_de(x)
+    df['desktop'] = df['title'].apply(get_de)
+    # Nuevo data frame con las menciones de cada Escritorio/WM
+    count_desktops = Counter(df['desktop']).most_common(20)
+    desktop_mentions = pd.DataFrame(count_desktops)
 
     # Validar
     if check_if_valid_data(df):
@@ -99,7 +110,13 @@ def run_reddit_etl():
         with engine.begin() as connection:
             df.to_sql('unixporn', con=connection,
                       if_exists='append', index=False)
-        print('Base de datos actualizada')
+            desktop_mentions.to_sql('desktop_mentions', con=connection,
+                      if_exists='append', index=False)
+        print('Bases de datos actualizadas')
     except Exception as e:
         exit(
             f'Error: base de datos no actualizada. Razón {e.with_traceback(None)}')
+
+
+if __name__ == '__main__':
+    run_reddit_etl()
