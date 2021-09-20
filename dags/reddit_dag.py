@@ -8,7 +8,7 @@ from reddit_etl import run_reddit_etl
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
-    'start_date': datetime.utcnow() + timedelta(seconds=1),
+    'start_date': datetime.today(),
     'email': ['airflow@example.com'],
     'email_on_failure': False,
     'email_on_retry': False,
