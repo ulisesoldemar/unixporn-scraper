@@ -1,6 +1,7 @@
 import json
 import pandas as pd
 import praw
+import plotly.express as px
 from sqlalchemy import create_engine
 from collections import Counter
 
@@ -97,7 +98,15 @@ def run_reddit_etl() -> None:
     scraper_df['desktop'] = scraper_df['title'].apply(get_de)
     # Nuevo data frame con las menciones de cada Escritorio/WM
     count_desktops = Counter(scraper_df['desktop']).most_common(20)
-    desktop_mentions_df = pd.DataFrame(count_desktops)
+    desktop_mentions_df = pd.DataFrame(
+        count_desktops, columns=['de_wm', 'count'])
+    # Gráfica de las menciones de Escritorios/WM
+    print(desktop_mentions_df)
+    fig = px.bar(desktop_mentions_df, x='de_wm', y='count', labels={
+        'de_wm': 'WM/DE',
+        'count': 'Mentions',
+    }, title='Unixporn\'s WM/DE Mentions')
+    fig.show()
 
     # Validar
     if check_if_valid_data(scraper_df):
@@ -109,9 +118,9 @@ def run_reddit_etl() -> None:
     try:
         with engine.begin() as connection:
             scraper_df.to_sql('unixporn', con=connection,
-                      if_exists='append', index=False)
+                              if_exists='append', index=False)
             desktop_mentions_df.to_sql('desktop_mentions', con=connection,
-                      if_exists='append', index=False)
+                                       if_exists='append', index=False)
         print('Bases de datos actualizadas')
     except Exception as e:
         exit(
