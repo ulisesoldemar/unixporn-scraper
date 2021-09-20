@@ -1,0 +1,7 @@
+# Credenciales para la API de Reddit
+client_secrets.json
+# Archivos de Pipenv
+Pipfile
+Pipfile.lock
+# Pruebas
+test.py
