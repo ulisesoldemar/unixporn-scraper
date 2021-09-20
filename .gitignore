@@ -5,3 +5,5 @@ Pipfile
 Pipfile.lock
 # Pruebas
 test.py
+# Bases de datos
+*.db
